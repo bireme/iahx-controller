@@ -178,13 +178,13 @@ public class DIAServlet extends HttpServlet {
             queryString.append("&rows=").append(count);
         }
         if (output != null && output.equals("") == false){
-            if (output.equals("xml")){
+            if (output.equals("xml")) {
+                // use internal solr xslt transformation
                 queryString.append("&wt=xslt&tr=export-xml.xsl");
-            }else if (output.equals("json") || output.equals("rss")){
+            }else if ( !output.equals("solr") ){
+                // set default output to json
                 queryString.append("&wt=json&json.nl=arrarr");
             }   
-        }else{
-            output = "html";
         }
         if (tag != null && tag.equals("") == false){
             queryString.append("&tag=").append(tag);
@@ -216,8 +216,9 @@ public class DIAServlet extends HttpServlet {
             result = result.replaceAll("(\\^d)","");
             result = result.replaceAll("\\^s(\\w*)/*", "/$1");
         }
-        
-        if (output.equals("json") || output.equals("rss")){
+
+        //TODO: add parameter to call iahlinks 
+        if ( !output.equals("xml") && !output.equals("solr") ){
            String iahlinks = this.getIAHLinksJSON(result);        
            // concatena o resultado da pesquisa com o servico de iahlinks
            result = "{\"diaServerResponse\":[" + result + "," + iahlinks + "]}";
@@ -229,7 +230,7 @@ public class DIAServlet extends HttpServlet {
     private void sendResponse(HttpServletResponse response, String result, String output) throws IOException{
         
         PrintWriter out = response.getWriter();
-        if ( output.equals("xml") || output.equals("html") ){
+        if ( output.equals("xml") || output.equals("solr") ){
             response.setContentType("text/xml; charset=utf-8");
         }else{
             response.setContentType("text/plain; charset=utf-8");
