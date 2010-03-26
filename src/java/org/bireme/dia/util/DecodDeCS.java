@@ -65,8 +65,8 @@ public class DecodDeCS {
             
             matcher.appendReplacement(buffer, descritor);
         }
-        // Adiciona o restante do texto de entrada, não correspondido
-        // pela expressão regular
+        // Adiciona o restante do texto de entrada, nÃ£o correspondido
+        // pela expressï¿½o regular
         matcher.appendTail(buffer);
         
         return buffer.toString();
