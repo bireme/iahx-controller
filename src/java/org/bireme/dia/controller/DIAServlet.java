@@ -19,9 +19,10 @@ import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 
-import org.apache.log4j.Logger;
-import org.bireme.dia.util.DecodDeCS;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory; 
 
+import org.bireme.dia.util.DecodDeCS;
 
 /**
  *
@@ -29,7 +30,7 @@ import org.bireme.dia.util.DecodDeCS;
  * @version
  */
 public class DIAServlet extends HttpServlet {
-    private Logger log;
+    private Log log;
     
     private String diaServer;
     private String params;
@@ -45,12 +46,12 @@ public class DIAServlet extends HttpServlet {
     
     public void init(ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
-        log = Logger.getLogger(this.getClass());
+        log = LogFactory.getLog(this.getClass());
         config = ResourceBundle.getBundle(CONFIG_FILE);
         
         try{
             //String decsCodePath = getServletContext().getRealPath("/WEB-INF/classes/resources/decs/code") + "/";
-            String decsCodePath = getServletContext().getRealPath("resources/decs/code") + "/";
+            String decsCodePath = getServletContext().getRealPath("../../resources/decs/code") + "/";
             decs = new DecodDeCS(decsCodePath);
         }catch (IOException ex){
             log.fatal("falha ao tentar instanciar o objecto decs");
@@ -388,17 +389,6 @@ public class DIAServlet extends HttpServlet {
         // dismax query type is standard option if qt paramenter is not present
         qt = "bvs";                                                 
         
-        /* versao anterior 20080925
-        if (q != null){
-            if (q.contains("$") || q.contains("*") || q.contains(":") || q.contains("(")){
-                qt = "standard";
-            }
-        }      
-        if ( index != null && !index.equals("")) {
-            qt = "standard";
-        }
-        */
-
         if (q == null || q.equals("") || q.contains("$") || q.contains("*") || q.contains(":") || q.contains("(")){
             qt = "standard";
         }

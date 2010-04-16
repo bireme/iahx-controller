@@ -23,8 +23,8 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  *
@@ -33,12 +33,12 @@ import org.apache.log4j.PropertyConfigurator;
 public class DecodDeCS {
     private RAMDirectory directory;
     private IndexSearcher decs;
-    private Logger log;
+    private Log log;
     
     public DecodDeCS(String decsCodePath) throws IOException {
         directory = new RAMDirectory(decsCodePath);
         decs = new IndexSearcher(directory);
-        log = Logger.getLogger(this.getClass());
+        log = LogFactory.getLog(this.getClass());
     }
     
     public String decode(String text, String lang) {
