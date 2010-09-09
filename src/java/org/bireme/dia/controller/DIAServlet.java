@@ -354,7 +354,7 @@ public class DIAServlet extends HttpServlet {
         // indicate solr app for the request
         solr = "/" + site;
         
-        if (col == null || col.equals("") == false )
+        if (col != null && col.equals("") == false )
             solr += "-" + col;
         
         // busca o site informado no arquivo de configuracao para determinar o servidor
