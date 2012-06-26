@@ -49,8 +49,8 @@ public class DIAServlet extends HttpServlet {
         config = ResourceBundle.getBundle(CONFIG_FILE);
 
         try {
-            String decsCodePath = getServletContext().getRealPath("/WEB-INF/classes/resources/decs/code") + "/";
-            //String decsCodePath = getServletContext().getRealPath("../../resources/decs/code") + "/";
+            //String decsCodePath = getServletContext().getRealPath("/WEB-INF/classes/resources/decs/code") + "/";
+            String decsCodePath = getServletContext().getRealPath("../../resources/decs/code") + "/";
             decs = new DecodDeCS(decsCodePath);
         } catch (IOException ex) {
             log.fatal("falha ao tentar instanciar o objecto decs");
