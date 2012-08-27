@@ -47,13 +47,14 @@ public class DIAServlet extends HttpServlet {
         super.init(servletConfig);
         log = LogFactory.getLog(this.getClass());
         config = ResourceBundle.getBundle(CONFIG_FILE);
+        String decsCodePath = "";
 
         try {
-            //String decsCodePath = getServletContext().getRealPath("/WEB-INF/classes/resources/decs/code") + "/";
-            String decsCodePath = getServletContext().getRealPath("../../resources/decs/code") + "/";
+            //decsCodePath = getServletContext().getRealPath("../../resources/decs/code") + "/";
+            decsCodePath = getServletContext().getRealPath("/WEB-INF/classes/resources/decs/code") + "/";
             decs = new DecodDeCS(decsCodePath);
         } catch (IOException ex) {
-            log.fatal("falha ao tentar instanciar o objecto decs");
+            log.fatal("Unable to load DeCS component for decoding descriptores at:  " + decsCodePath);
         }
 
         // verifica no arquivo de configuracao se foi definido o default server
@@ -70,7 +71,7 @@ public class DIAServlet extends HttpServlet {
             // use default configuration
         }
 
-        log.info("dia-controller inicializado - usando DEFAULT_SERVER: " + DEFAULT_SERVER);
+        log.info("iahx-controller initialized - DEFAULT_SERVER: " + DEFAULT_SERVER);
     }
 
     /** Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
@@ -93,40 +94,9 @@ public class DIAServlet extends HttpServlet {
 
         if ("search".equals(type)) {
             processSearch(request, response);
-        } else if ("detail".equals(type)) {
-            processDetail(request, response);
+        } else if ("related".equals(type)) {
+            processRelated(request, response);
         }
-    }
-
-    private void processDetail(HttpServletRequest request, HttpServletResponse response) throws IOException {
-
-        String id = request.getParameter("id");
-        String lang = request.getParameter("lang");
-        String output = "json";
-
-        String searchUrl = diaServer + "/select/";
-
-        // faz primeira consulta pelo id que retorna uma string contendo a expressão de pesquisa para os documentos relacionados
-        String queryString1 = "q=id:\"" + id + "\"" + "&qt=standard&wt=xslt&tr=related_query.xsl";
-        String relatedQuery = sendGetCommand(queryString1, searchUrl);
-        // realiza decode dos descritores 
-        relatedQuery = decs.decode(relatedQuery, lang);
-
-        relatedQuery = URLEncoder.encode(relatedQuery, "utf-8");
-
-        String queryString2 = "q=" + relatedQuery + "&qt=related&wt=json&json.nl=arrarr";
-
-        log.info("processRelated query: " + queryString2);
-
-        String result = sendGetCommand(queryString2, searchUrl);
-        result = decs.decode(result, lang);
-
-        String iahlinks = this.getIAHLinksJSON(result);
-        // concatena o resultado da pesquisa com o servico de iahlinks
-        result = "{\"diaServerResponse\":[" + result + "," + iahlinks + "]}";
-
-        sendResponse(response, result, output);
-
     }
 
     private void processSearch(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -233,6 +203,33 @@ public class DIAServlet extends HttpServlet {
         }
 
         sendResponse(response, result, output);
+    }
+
+    private void processRelated(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        StringBuilder queryString = new StringBuilder();
+
+        // solrconfig of the index must have a requesthandler "/related" of class MoreLikeThis
+        String searchUrl = diaServer + "/related/";
+        
+        String id = request.getParameter("id");
+        String lang = request.getParameter("lang");
+        
+        queryString.append("q=id:\"").append(id).append("\"&wt=json&json.nl=arrarr") ;
+                
+        // get result from solr
+        String result = sendGetCommand(queryString.toString(), searchUrl);
+        
+        //verifica atraves de regular expression se o resultado contem descritores DeCS codificados
+        if ( ENCODE_REGEX.matcher(result).find() ) {
+            result = decs.decode(result, lang);
+            //retira marcas dos descritores que nao foram decodificados
+            result = result.replaceAll("(\\^d)", "");
+            result = result.replaceAll("\\^s(\\w*)/*", "/$1");
+        }
+        
+        result = "{\"diaServerResponse\":[" + result + "]}";
+ 
+        sendResponse(response, result, "json");
     }
 
     private void sendResponse(HttpServletResponse response, String result, String output) throws IOException {
