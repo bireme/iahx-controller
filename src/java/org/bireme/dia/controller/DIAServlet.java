@@ -1,4 +1,4 @@
-  /*
+/*
  * DIAServlet.java
  *
  * Created on 15 de Junho de 2007, 16:19
@@ -7,6 +7,7 @@ package org.bireme.dia.controller;
 
 import java.io.*;
 import java.net.*;
+import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +17,7 @@ import javax.servlet.http.*;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,7 +64,7 @@ public class DIAServlet extends HttpServlet {
         } catch (Exception ex) {
             // USA DEFAULT_SERVER STANDARD localhost
         }
-        
+
         // verifica no arquivo de configuracao se foi definido o check for iahlinks
         try {
             IAHLINKS_CHECK = config.getString("iahlinks_check");
@@ -101,7 +102,6 @@ public class DIAServlet extends HttpServlet {
 
     private void processSearch(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String queryFormatted, filterFormatted = null;
-        StringBuilder queryString = new StringBuilder();
 
         String searchUrl = diaServer + "/select/";
 
@@ -114,72 +114,74 @@ public class DIAServlet extends HttpServlet {
         String count = request.getParameter("count");
         String output = request.getParameter("output");
         String tag = request.getParameter("tag");
-        String decode = request.getParameter("decode");    //flag decode decs descriptors (export xml)     
+        String decode = request.getParameter("decode");    //flag decode decs descriptors (export xml)
 
         String fl = request.getParameter("fl");            // facet.limit parameter
         String fb = request.getParameter("fb");            // facet browse field and total (ex. mh:50)
 
 
         String queryType = this.identifyQueryType(request);
+        Map<String,String> queryMap = new HashMap<String,String>();
 
-        queryString.append("qt=").append(queryType);        //set the query type
+        queryMap.put("qt", queryType);                      //set the query type
 
-        // make query parameter 
-        queryString.append("&q=");
+        // make query parameter
         if (q != null && q.equals("") == false) {
             queryFormatted = this.formatQuery(q);
 
             if (index != null && index.equals("") == false) {
                 //adiciona query por indice.  ti:(malaria aviaria)
-                queryString.append(index).append(":(" + queryFormatted + ")");
+                queryMap.put("q", index + ":(" + queryFormatted + ")");
             } else {
-                queryString.append(queryFormatted);
+                queryMap.put("q", queryFormatted);
             }
         } else {
-            queryString.append("*:*");                      // if query parameter null then search all documents
+            queryMap.put("q", "*:*");                       // if query parameter null then search all documents
         }
-        // END make query parameter 
+        // END make query parameter
 
         if (fq != null && fq.equals("") == false) {
-            //queryString.append("&fq=").append(URLEncoder.encode(fq, "utf-8"));
+            //queryMap.put("fq", URLEncoder.encode(fq, "utf-8"));
             filterFormatted = this.formatQuery(fq);
-            queryString.append("&fq=").append(filterFormatted);
+            queryMap.put("fq",filterFormatted);
         }
 
         if (start != null && start.equals("") == false) {
-            queryString.append("&start=").append(start);
+            queryMap.put("start",start);
         }
         if (sort != null && sort.equals("") == false) {
-            queryString.append("&sort=").append(sort);
+            queryMap.put("sort",sort);
         }
         if (count != null && count.equals("") == false) {
-            queryString.append("&rows=").append(count);
+            queryMap.put("rows",count);
         }
         if (output != null && output.equals("") == false) {
             if (output.equals("xml")) {
                 // use internal solr xslt transformation
-                queryString.append("&wt=xslt&tr=export-xml.xsl");
+                queryMap.put("wt",xslt);
+                queryMap.put("tr", "export-xml.xsl");
             } else if (!output.equals("solr")) {
                 // set default output to json
-                queryString.append("&wt=json&json.nl=arrarr");
+                queryMap.put("wt", "json");
+                queryMap.put("json.nl", "arrarr");
             }
         }
         if (tag != null && tag.equals("") == false) {
-            queryString.append("&tag=").append(tag);
+            queryMap.put("tag", tag);
         }
         if (fl != null && fl.equals("") == false) {
-            queryString.append("&facet.limit=").append(fl);
+            queryMap.put("facet.limit",fl);
         }
         if (fb != null && fb.equals("") == false) {
-            // facet browse by field (ex. mh:50)            
+            // facet browse by field (ex. mh:50)
             String[] fbParam = fb.split(":");
 
-            queryString.append("&f.").append(fbParam[0]).append(".facet.limit=").append(fbParam[1]);
+            queryMap.put("f." + fbParam[0] + ".facet.limit", fbParam[1]);
         }
 
         //System.out.println("query final: " + queryStringFormatted);
 
-        String result = sendGetCommand(queryString.toString(), searchUrl);
+        String result = sendPostCommand(queryMap, searchUrl);
         //verifica o flag de decode
         if (decode == null || decode.equals("")) {
             decode = "true";
@@ -195,7 +197,7 @@ public class DIAServlet extends HttpServlet {
             result = result.replaceAll("\\^s(\\w*)/*", "/$1");
         }
 
-        //TODO: add parameter to call iahlinks 
+        //TODO: add parameter to call iahlinks
         if (!output.equals("xml") && !output.equals("solr")) {
             String iahlinks = this.getIAHLinksJSON(result);
             // concatena o resultado da pesquisa com o servico de iahlinks
@@ -206,19 +208,21 @@ public class DIAServlet extends HttpServlet {
     }
 
     private void processRelated(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        StringBuilder queryString = new StringBuilder();
+        Map<String,String> queryMap = new HashMap<String,String>();
 
         // solrconfig of the index must have a requesthandler "/related" of class MoreLikeThis
         String searchUrl = diaServer + "/related/";
-        
+
         String id = request.getParameter("id");
         String lang = request.getParameter("lang");
-        
-        queryString.append("q=id:\"").append(id).append("\"&wt=json&json.nl=arrarr") ;
-                
+
+        queryMap.put("qid:\"" + id + "\"");
+        queryMap.put("wt", "json");
+        queryMap.put("json.nl", "arrarr");
+
         // get result from solr
-        String result = sendGetCommand(queryString.toString(), searchUrl);
-        
+        String result = sendPostCommand(queryMap, searchUrl);
+
         //verifica atraves de regular expression se o resultado contem descritores DeCS codificados
         if ( ENCODE_REGEX.matcher(result).find() ) {
             result = decs.decode(result, lang);
@@ -226,9 +230,9 @@ public class DIAServlet extends HttpServlet {
             result = result.replaceAll("(\\^d)", "");
             result = result.replaceAll("\\^s(\\w*)/*", "/$1");
         }
-        
+
         result = "{\"diaServerResponse\":[" + result + "]}";
- 
+
         sendResponse(response, result, "json");
     }
 
@@ -278,7 +282,10 @@ public class DIAServlet extends HttpServlet {
         String iahLinksUrl = "http://" + iahLinksServer + "/iahlinks/select/";
         log.info(iahLinksUrl);
 
-        String query = "wt=json&json.nl=arrarr&q=";
+        Map<String,String> query = new HashMap<String,String>();
+        query.put("wt", "json");
+        query.put("json.nl", "arrarr");
+        query.put("q", "");
 
         StringBuilder idListQuery = new StringBuilder();
         Matcher matcher = IDLIST_JSON_REGEX.matcher(result);
@@ -289,34 +296,35 @@ public class DIAServlet extends HttpServlet {
         }
 
         if (idListQuery.length() > 0) {
-            query += this.formatQuery(idListQuery.toString());
+            query.put("q", this.formatQuery(idListQuery.toString());
 
             log.info(idListQuery);
-            jsonResponse = sendGetCommand(query, iahLinksUrl);
+            jsonResponse = sendPostCommand(query, iahLinksUrl);
             jsonResponse = jsonResponse.replaceFirst("responseHeader", "iahLinks");
         }
         return jsonResponse;
     }
 
     /**
-     * Send the command to Solr using a GET
+     * Send the command to Solr using a POST
      * @param queryString
      * @param url
      * @return
      * @throws IOException
      */
-    private String sendGetCommand(String queryString, String url)
+    private String sendPostCommand(Map<String,String> queryMap, String url)
             throws IOException {
         String results = null;
         HttpClient client = new HttpClient();
-        GetMethod get = new GetMethod(url);
+        PostMethod post = new PostMethod(url);
 
-        get.setQueryString(queryString.trim());
+        for (Map.Entry<String,String> entry : queryMap.entrySet()) {
+            post.addParameter(entry.getKey(), entry.getValue());
+        }
 
         try {
             // Execute the method.
-            int statusCode = client.executeMethod(get);
-
+            int statusCode = client.executeMethod(post);
             if (statusCode != HttpStatus.SC_OK) {
                 log.fatal("Method failed: " + get.getStatusLine());
             }
