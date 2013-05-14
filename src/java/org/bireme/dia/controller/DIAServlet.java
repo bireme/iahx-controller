@@ -8,6 +8,7 @@ package org.bireme.dia.controller;
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -158,7 +159,7 @@ public class DIAServlet extends HttpServlet {
         if (output != null && output.equals("") == false) {
             if (output.equals("xml")) {
                 // use internal solr xslt transformation
-                queryMap.put("wt",xslt);
+                queryMap.put("wt", "xslt");
                 queryMap.put("tr", "export-xml.xsl");
             } else if (!output.equals("solr")) {
                 // set default output to json
@@ -216,7 +217,7 @@ public class DIAServlet extends HttpServlet {
         String id = request.getParameter("id");
         String lang = request.getParameter("lang");
 
-        queryMap.put("qid:\"" + id + "\"");
+        queryMap.put("q", "id:\"" + id + "\"");
         queryMap.put("wt", "json");
         queryMap.put("json.nl", "arrarr");
 
@@ -296,7 +297,7 @@ public class DIAServlet extends HttpServlet {
         }
 
         if (idListQuery.length() > 0) {
-            query.put("q", this.formatQuery(idListQuery.toString());
+            query.put("q", this.formatQuery(idListQuery.toString()));
 
             log.info(idListQuery);
             jsonResponse = sendPostCommand(query, iahLinksUrl);
@@ -326,11 +327,11 @@ public class DIAServlet extends HttpServlet {
             // Execute the method.
             int statusCode = client.executeMethod(post);
             if (statusCode != HttpStatus.SC_OK) {
-                log.fatal("Method failed: " + get.getStatusLine());
+                log.fatal("Method failed: " + post.getStatusLine());
             }
 
-            String charset = get.getResponseCharSet();
-            InputStream responseBodyAsStream = get.getResponseBodyAsStream();
+            String charset = post.getResponseCharSet();
+            InputStream responseBodyAsStream = post.getResponseBodyAsStream();
             StringBuilder responseBuffer = new StringBuilder();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(responseBodyAsStream, charset));
@@ -351,7 +352,7 @@ public class DIAServlet extends HttpServlet {
             log.fatal("Fatal transport error: " + e.getMessage());
         } finally {
             // Release the connection.
-            get.releaseConnection();
+            post.releaseConnection();
         }
 
         if (results == null) {
