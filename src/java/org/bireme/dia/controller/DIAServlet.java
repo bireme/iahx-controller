@@ -180,7 +180,7 @@ public class DIAServlet extends HttpServlet {
             queryMap.put("f." + fbParam[0] + ".facet.limit", fbParam[1]);
         }
 
-        //System.out.println("query final: " + queryStringFormatted);
+        //System.out.println("query final: " + queryMap.toString());
 
         String result = sendPostCommand(queryMap, searchUrl);
         //verifica o flag de decode
@@ -318,6 +318,7 @@ public class DIAServlet extends HttpServlet {
         String results = null;
         HttpClient client = new HttpClient();
         PostMethod post = new PostMethod(url);
+        post.addRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
 
         for (Map.Entry<String,String> entry : queryMap.entrySet()) {
             post.addParameter(entry.getKey(), entry.getValue());
@@ -442,7 +443,7 @@ public class DIAServlet extends HttpServlet {
             queryFormatted = queryFormatted.replaceFirst(replacement, matcher.group(0));
         }
 
-        queryFormatted = URLEncoder.encode(queryFormatted, "utf-8");
+        //queryFormatted = URLEncoder.encode(queryFormatted, "utf-8");
 
         return queryFormatted;
     }
