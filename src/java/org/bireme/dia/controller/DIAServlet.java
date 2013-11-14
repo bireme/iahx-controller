@@ -424,8 +424,8 @@ public class DIAServlet extends HttpServlet {
 
         replacement = "__replacement__";
 
-        // Preserve strings between quotation marks
-        p = Pattern.compile("\".*?\"");
+        // Preserve strings between quotes and brackets ex. [NOW TO *]
+        p = Pattern.compile("[\"\\[].*?[\"\\]]");
         matcher = p.matcher(queryString);
         queryFormatted = matcher.replaceAll(replacement);
 
@@ -436,7 +436,6 @@ public class DIAServlet extends HttpServlet {
         queryFormatted = queryFormatted.replaceAll(" and not ", " NOT ");
         queryFormatted = queryFormatted.replaceAll(" and ", " AND ");
         queryFormatted = queryFormatted.replaceAll(" to ", " TO ");
-        queryFormatted = queryFormatted.replaceAll(" now ", " NOW ");
 
         // Put back strings between quotation marks
         matcher.reset();
