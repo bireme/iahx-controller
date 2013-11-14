@@ -436,6 +436,7 @@ public class DIAServlet extends HttpServlet {
         queryFormatted = queryFormatted.replaceAll(" and not ", " NOT ");
         queryFormatted = queryFormatted.replaceAll(" and ", " AND ");
         queryFormatted = queryFormatted.replaceAll(" to ", " TO ");
+        queryFormatted = queryFormatted.replaceAll(" now ", " NOW ");
 
         // Put back strings between quotation marks
         matcher.reset();
