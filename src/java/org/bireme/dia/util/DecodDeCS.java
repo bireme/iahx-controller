@@ -91,8 +91,10 @@ public class DecodDeCS {
                 descriptor = descriptorTerm[0];
             } else if (lang.equals("es")){
                 descriptor = descriptorTerm[1];
-            } else {
+            } else if (lang.equals("pt")){
                 descriptor = descriptorTerm[2];
+            } else if (lang.equals("fr")){
+                descriptor = descriptorTerm[3];
             }
             descriptor = xmlEntity(descriptor);
         }
