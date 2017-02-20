@@ -137,7 +137,9 @@ public class DIAServlet extends HttpServlet {
                 queryMap.put("q", queryFormatted);
             }
         } else {
-            queryMap.put("q", "*:*");                       // if query parameter null then search all documents
+            queryMap.put("q", "*:*");                    // if query parameter null then search all documents
+            queryMap.put("facet.method", "enum");        // optimization for empty query on solr 5 
+                                                         // (facet.method default is fc that is better for not empty queries)
         }
         // END make query parameter
 
