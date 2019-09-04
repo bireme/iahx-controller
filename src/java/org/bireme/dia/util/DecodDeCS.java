@@ -87,14 +87,15 @@ public class DecodDeCS {
             
             log.info(descriptorTerm);
             
-            if (lang == null || lang.equals("en")){
-                descriptor = descriptorTerm[0];
-            } else if (lang.equals("es")){
+            if (lang.equals("es")){
                 descriptor = descriptorTerm[1];
             } else if (lang.equals("pt")){
                 descriptor = descriptorTerm[2];
             } else if (lang.equals("fr")){
                 descriptor = descriptorTerm[3];
+            } else{
+                // fallback decode descriptor in english
+                descriptor = descriptorTerm[0];
             }
             descriptor = xmlEntity(descriptor);
         }
