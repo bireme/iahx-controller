@@ -119,7 +119,8 @@ public class DIAServlet extends HttpServlet {
 
         String fl = request.getParameter("fl");            // facet.limit parameter
         String fb = request.getParameter("fb");            // facet browse field and total (ex. mh:50)
-
+        
+        String[] facet_field =  request.getParameterValues("facet.field");
 
         String queryType = this.identifyQueryType(request);
         Map<String,String> queryMap = new HashMap<String,String>();
@@ -181,6 +182,14 @@ public class DIAServlet extends HttpServlet {
 
             queryMap.put("f." + fbParam[0] + ".facet.limit", fbParam[1]);
         }
+        
+        int facet_index = 0;
+        for (String facet: facet_field) {
+            facet_index++;
+            // hashmap dont allow duplicated keys 
+            // add special name for parameter array (facet.field%1) 
+            queryMap.put("facet.field%" + facet_index, facet);
+        } 
 
         //System.out.println("query final: " + queryMap.toString());
 
@@ -281,7 +290,6 @@ public class DIAServlet extends HttpServlet {
             iahLinksServer += ":" + DEFAULT_PORT;
         }
 
-
         String iahLinksUrl = "http://" + iahLinksServer + "/iahlinks/select/";
         log.info(iahLinksUrl);
 
@@ -323,7 +331,14 @@ public class DIAServlet extends HttpServlet {
         post.addRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
 
         for (Map.Entry<String,String> entry : queryMap.entrySet()) {
-            post.addParameter(entry.getKey(), entry.getValue());
+           String param_name = entry.getKey();
+           String param_value = entry.getValue();
+           
+           // check for special name used for parameter array (ex. facet.field%1) 
+           if (param_name.contains("%")){
+               param_name = param_name.substring(0, param_name.lastIndexOf("%"));
+           }
+           post.addParameter(param_name, param_value);
         }
 
         try {
