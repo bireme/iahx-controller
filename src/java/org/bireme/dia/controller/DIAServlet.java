@@ -8,6 +8,7 @@ package org.bireme.dia.controller;
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
@@ -123,7 +124,7 @@ public class DIAServlet extends HttpServlet {
         String[] facet_field =  request.getParameterValues("facet.field");
 
         String queryType = this.identifyQueryType(request);
-        Map<String,String> queryMap = new HashMap<String,String>();
+        Map<String,String> queryMap = new LinkedHashMap<String,String>();
 
         queryMap.put("qt", queryType);                      //set the query type
 
