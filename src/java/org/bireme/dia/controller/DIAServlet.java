@@ -183,13 +183,15 @@ public class DIAServlet extends HttpServlet {
             queryMap.put("f." + fbParam[0] + ".facet.limit", fbParam[1]);
         }
         
-        int facet_index = 0;
-        for (String facet: facet_field) {
-            facet_index++;
-            // hashmap dont allow duplicated keys 
-            // add special name for parameter array (facet.field%1) 
-            queryMap.put("facet.field%" + facet_index, facet);
-        } 
+        if (facet_field != null){
+            int facet_index = 0;
+            for (String facet: facet_field) {
+                facet_index++;
+                // hashmap dont allow duplicated keys 
+                // add special name for parameter array (facet.field%1) 
+                queryMap.put("facet.field%" + facet_index, facet);
+            }
+        }
 
         //System.out.println("query final: " + queryMap.toString());
 
