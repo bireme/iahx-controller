@@ -8,6 +8,7 @@ package org.bireme.dia.controller;
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -126,8 +127,9 @@ public class DIAServlet extends HttpServlet {
         String queryType = this.identifyQueryType(request);
         Map<String,String> queryMap = new LinkedHashMap<String,String>();
 
+        Map request_params = request.getParameterMap();
+        
         queryMap.put("qt", queryType);                      //set the query type
-
         // make query parameter
         if (q != null && q.equals("") == false) {
             queryFormatted = this.formatQuery(q);
@@ -190,8 +192,19 @@ public class DIAServlet extends HttpServlet {
                 facet_index++;
                 // hashmap dont allow duplicated keys 
                 // add special name for parameter array (facet.field%1) 
-                queryMap.put("facet.field%" + facet_index, facet);
+                queryMap.put("facet.field%" + facet_index, facet);               
             }
+            // check request for additional facet sort param (ex. sort)                
+            Iterator i = request_params.keySet().iterator();
+            String facet_sort_param = "f.";
+            while ( i.hasNext() ){
+                String key = (String) i.next();
+                String value = request.getParameter(key);
+
+                if (key.contains(facet_sort_param)){
+                    queryMap.put(key, value);
+                }                    
+            }            
         }
 
         //System.out.println("query final: " + queryMap.toString());
