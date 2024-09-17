@@ -126,5 +126,6 @@ def search(request: Request):
     if output in ['xml', 'solr']:
         return Response(content=result, media_type="text/xml; charset=utf-8", headers={"Cache-Control": "no-cache"})
     else:
+        result = '{"diaServerResponse":[' + result + ']}';
         return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
 
