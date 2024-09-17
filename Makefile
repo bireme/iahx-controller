@@ -42,4 +42,4 @@ dev_cache_sh:
 	@docker compose -f $(COMPOSE_FILE_DEV) exec iahx_controller_cache bash
 
 dev_import_decs_redis:
-	@docker compose -f $(COMPOSE_FILE_DEV) exec iahx_controller python util/import_decs_redis.py
+	python controller/util/import_decs_redis.py
