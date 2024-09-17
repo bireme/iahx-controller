@@ -1,4 +1,2 @@
-nbproject
-# exclude versioning of full decs version # 
-resources
-src/java/controller.properties
+.env
+README-dev.md

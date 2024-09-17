@@ -1,0 +1,32 @@
+services:
+  iahx_controller:
+    container_name: iahx-controller
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      '.env'
+    volumes:
+      - ./controller:/app
+    ports:
+      - 8000:8000
+    networks:
+      - nginx-proxy
+
+  iahx_controller_cache:
+    image: bitnami/redis:7.2
+    container_name: iahx-controller-cache
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_AOF_ENABLED=no
+      - TZ=${TIMEZONE}
+    command:  /opt/bitnami/scripts/redis/run.sh --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
+    networks:
+      - nginx-proxy
+
+networks:
+  nginx-proxy:
+      external: true

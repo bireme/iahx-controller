@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "controller"
+version = "0.1.0"
+description = ""
+authors = ["BIREME"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.111.0"
+redis = "^5.0.8"
+requests = "^2.32.3"
+loguru = "^0.7.2"
+
+[tool.poetry.group.dev.dependencies]
+dremio-simple-query = "^0.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
