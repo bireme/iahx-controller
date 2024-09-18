@@ -1,7 +1,7 @@
 from http import HTTPStatus
-from urllib.parse import urlencode
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse, Response
+from typing import Annotated
 from decode_decs import DecodDeCS
 from loguru import logger
 
@@ -73,27 +73,29 @@ def format_query(query_string):
 
     return query_formatted
 
-@app.get('/search')
 @app.post('/search')
-def search(request: Request):
-    solr_server = set_solr_server(request.query_params.get('site'), request.query_params.get('col'))
+def search(
+    site: Annotated[str, Form()],
+    col: Annotated[str, Form()] = None,
+    q: Annotated[str, Form()] = None,
+    fq: Annotated[str, Form()] = None,
+    index: Annotated[str, Form()] = None,
+    lang: Annotated[str, Form()] = None,
+    start: Annotated[int, Form()] = None,
+    sort: Annotated[str, Form()] = None,
+    count: Annotated[int, Form()] = None,
+    output: Annotated[str, Form()] = None,
+    tag: Annotated[str, Form()] = None,
+    decode: Annotated[str, Form()] = None,
+    fl: Annotated[str, Form()] = None,
+    fb: Annotated[str, Form()] = None,
+    facet_field: Annotated[list[str], Form(alias='facet.field')] = None,
+    facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None
+):
+
+    solr_server = set_solr_server(site, col)
     search_url = f"{solr_server}/select/"
     query_map = {}
-
-    q = request.query_params.get('q')
-    fq = request.query_params.get('fq')
-    index = request.query_params.get('index')
-    lang = request.query_params.get('lang')
-    start = request.query_params.get('start')
-    sort = request.query_params.get('sort')
-    count = request.query_params.get('count')
-    output = request.query_params.get('output')
-    tag = request.query_params.get('tag')
-    decode = request.query_params.get('decode', 'true')
-    fl = request.query_params.get('fl')
-    fb = request.query_params.get('fb')
-    facet_field = request.query_params.getlist('facet.field')
-    facet_field_terms = request.query_params.get('facet_field_terms')
 
     # Form query
     if q:

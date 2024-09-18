@@ -3,13 +3,14 @@ services:
     container_name: iahx-controller
     build:
       context: .
+      target: dev
     restart: unless-stopped
     env_file:
       '.env'
     volumes:
       - ./controller:/app
     ports:
-      - 8000:8000
+      - ${APP_PORT}:8000
     networks:
       - nginx-proxy
 
