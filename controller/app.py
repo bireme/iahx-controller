@@ -81,6 +81,7 @@ def search(request: Request):
     fl = request.query_params.get('fl')
     fb = request.query_params.get('fb')
     facet_field = request.query_params.getlist('facet.field')
+    facet_field_terms = request.query_params.get('facet_field_terms')
 
     # Form query
     if q:
@@ -112,6 +113,14 @@ def search(request: Request):
 
     if facet_field:
         query_map['facet.field'] = facet_field
+
+    # Used for restrict the count of a facet to fixed list of options (ex. used in tab implementation)
+    if facet_field_terms:
+        facet_field_terms_parts = facet_field_terms.split(':')
+        facet_field_name = facet_field_terms_parts[0]
+        facet_field_terms = facet_field_terms_parts[1]
+
+        query_map['facet.field'] = "{{!terms={}}}{}".format(facet_field_terms, facet_field_name)
 
     result = send_post_command(query_map, search_url)
 
