@@ -7,8 +7,19 @@ from loguru import logger
 
 import re
 import requests
+import sentry_sdk
 import json
+import sys
 import os
+
+# Configure log and monitoring service
+logger.remove()
+logger.add(sys.stderr, level=os.getenv("LOG_LEVEL"))
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE",0)),
+    profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE",0)),
+)
 
 app = FastAPI()
 
@@ -19,6 +30,7 @@ ENCODE_REGEX = re.compile(r"\^[ds]\d+")
 
 # Initialize DeCS decoder
 decs = DecodDeCS()
+
 
 def set_solr_server(site, col):
     solr = f"/{site}"
