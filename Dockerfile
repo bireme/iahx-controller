@@ -20,3 +20,14 @@ EXPOSE 8000
 FROM base AS dev
 
 CMD fastapi dev app.py --host 0.0.0.0
+
+########### PRODUCTION STAGE ###########
+FROM base AS prod
+
+# Copy src files
+COPY ./controller /app/
+
+COPY ./redis_data /redis_data/
+
+# Execute app
+CMD uvicorn app:app --host 0.0.0.0 --port 8000 ${APP_RUN_PARAMS}
