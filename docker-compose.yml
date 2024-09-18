@@ -7,10 +7,13 @@ services:
     restart: unless-stopped
     env_file:
       '.env'
+    environment:
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - LETSENCRYPT_HOST=${VIRTUAL_HOST}
     volumes:
       - redis_data:/redis_data
     ports:
-      - 8000:8000
+      - ${APP_PORT}:8000
     networks:
       - nginx-proxy
 
