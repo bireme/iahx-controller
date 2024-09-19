@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse, Response
-from typing import Annotated
+from typing import Annotated, List
 from decode_decs import DecodDeCS
 from loguru import logger
 
@@ -89,7 +89,7 @@ def search(
     decode: Annotated[str, Form()] = None,
     fl: Annotated[str, Form()] = None,
     fb: Annotated[str, Form()] = None,
-    facet_field: Annotated[list[str], Form(alias='facet.field')] = None,
+    facet_field: List[str] = Form(default=None, alias='facet.field'),
     facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None
 ):
 
@@ -151,4 +151,3 @@ def search(
     else:
         result = '{"diaServerResponse":[' + result + ']}';
         return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
-
