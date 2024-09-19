@@ -125,8 +125,6 @@ def search(
         fb_param = fb.split(':')
         query_map[f"f.{fb_param[0]}.facet.limit"] = fb_param[1]
 
-    if facet_field:
-        query_map['facet.field'] = facet_field
 
     # Used for restrict the count of a facet to fixed list of options (ex. used in tab implementation)
     if facet_field_terms:
@@ -134,7 +132,11 @@ def search(
         facet_field_name = facet_field_terms_parts[0]
         facet_field_terms = facet_field_terms_parts[1]
 
-        query_map['facet.field'] = "{{!terms={}}}{}".format(facet_field_terms, facet_field_name)
+        # https://solr.apache.org/guide/6_6/faceting.html#Faceting-TaggingandExcludingFilters
+        facet_field.append("{{!ex=tab terms={}}}{}".format(facet_field_terms, facet_field_name))
+
+    if facet_field:
+        query_map['facet.field'] = facet_field
 
     result = send_post_command(query_map, search_url)
 
