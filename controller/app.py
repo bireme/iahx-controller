@@ -86,7 +86,6 @@ def search(
     count: Annotated[int, Form()] = None,
     output: Annotated[str, Form()] = None,
     tag: Annotated[str, Form()] = None,
-    decode: Annotated[str, Form()] = None,
     fl: Annotated[str, Form()] = None,
     fb: Annotated[str, Form()] = None,
     facet_field: List[str] = Form(default=None, alias='facet.field'),
@@ -140,7 +139,8 @@ def search(
 
     result = send_post_command(query_map, search_url)
 
-    if decode == 'true' and ENCODE_REGEX.search(result):
+    # Run regular expression and decode if found thesaurus codes
+    if ENCODE_REGEX.search(result):
         logger.info(f"Applying decod for language {lang}")
         result = decs.decode(result, lang)
 
