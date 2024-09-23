@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Header, HTTPException, Request, Form
 from fastapi.responses import JSONResponse, Response
 from typing import Annotated, List
 from decode_decs import DecodDeCS
@@ -7,6 +7,7 @@ from loguru import logger
 
 import re
 import requests
+import random
 import sentry_sdk
 import json
 import sys
@@ -26,6 +27,7 @@ app = FastAPI()
 # Configuration parameters from .env file
 DEFAULT_SERVER = os.getenv("DEFAULT_SOLR_SERVER", "localhost")
 DEFAULT_PORT = os.getenv("DEFAULT_SOLR_PORT", "8983")
+API_TOKEN = os.getenv("API_TOKEN", "8983")
 ENCODE_REGEX = re.compile(r"\^[ds]\d+")
 
 # Initialize DeCS decoder
@@ -41,6 +43,15 @@ def set_solr_server(site, col):
     site_env_name = site.replace("/", "_").upper()
 
     server = os.getenv(site_env_name, DEFAULT_SERVER)
+
+    # If server is a list
+    if ',' in server:
+        # Split the string by commas and strip any leading/trailing spaces
+        server_list = [s.strip() for s in server.split(",")]
+
+        # Randomly select one of the servers
+        server = random.choice(server_list)
+
     solr_server = f"http://{server}"
 
     if ":" not in server:
@@ -89,8 +100,15 @@ def search(
     fl: Annotated[str, Form()] = None,
     fb: Annotated[str, Form()] = None,
     facet_field: List[str] = Form(default=None, alias='facet.field'),
-    facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None
+    facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None,
+    apikey: str = Header(...),
 ):
+
+    if apikey != API_TOKEN:
+        raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail='Invalid api key',
+        )
 
     solr_server = set_solr_server(site, col)
     search_url = f"{solr_server}/select/"
