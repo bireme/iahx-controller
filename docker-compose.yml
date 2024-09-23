@@ -5,8 +5,7 @@ services:
       context: .
       target: prod
     restart: unless-stopped
-    env_file:
-      '.env'
+    env_file: ".env"
     environment:
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - LETSENCRYPT_HOST=${VIRTUAL_HOST}
@@ -14,6 +13,7 @@ services:
       - redis_data:/redis_data
     ports:
       - ${APP_PORT}:8000
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 ${APP_RUN_PARAMS}
     networks:
       - nginx-proxy
 
@@ -29,13 +29,13 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - redis_data:/bitnami/redis/data
-    command:  /opt/bitnami/scripts/redis/run.sh --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
     networks:
       - nginx-proxy
 
 networks:
   nginx-proxy:
-      external: true
+    external: true
 
 volumes:
   redis_data:
