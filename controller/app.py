@@ -6,7 +6,7 @@ from decode_decs import DecodDeCS
 from loguru import logger
 
 import re
-import requests
+import httpx
 import random
 import sentry_sdk
 import json
@@ -15,7 +15,7 @@ import os
 
 # Configure log and monitoring service
 logger.remove()
-logger.add(sys.stderr, level=os.getenv("LOG_LEVEL"))
+logger.add(sys.stderr, level=os.getenv("LOG_LEVEL"), serialize=False)
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE",0)),
@@ -61,14 +61,18 @@ def set_solr_server(site, col):
     logger.info(f"Solr server: {solr_server}")
     return solr_server
 
-def send_post_command(query_map, url):
+async def send_post_command(query_map, url):
+    logger.info(query_map)
+
     try:
-        response = requests.post(url, data=query_map)
-        response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=query_map)
+            response.raise_for_status()
+            return response.text
+    except httpx.RequestError as e:
         logger.error(f"Error sending POST command: {e}")
         return '"connection_problem"'
+
 
 def format_query(query_string):
     replacement = "__replacement__"
@@ -85,7 +89,7 @@ def format_query(query_string):
     return query_formatted
 
 @app.post('/search')
-def search(
+async def search(
     site: Annotated[str, Form()],
     col: Annotated[str, Form()] = None,
     q: Annotated[str, Form()] = None,
@@ -155,7 +159,7 @@ def search(
     if facet_field:
         query_map['facet.field'] = facet_field
 
-    result = send_post_command(query_map, search_url)
+    result = await send_post_command(query_map, search_url)
 
     # Run regular expression and decode if found thesaurus codes
     if ENCODE_REGEX.search(result):
