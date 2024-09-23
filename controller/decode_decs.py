@@ -1,35 +1,35 @@
 from loguru import logger
-
 import re
 import redis
 
 class DecodDeCS:
     def __init__(self, redis_host='iahx_controller_cache', redis_port=6379, redis_db=0):
         self.redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db)
+        self.REGEX = re.compile(r"(\^[ds])(\d+)")  # Pre-compile regex pattern
 
     def decode(self, text, lang):
         """
-        Decode a given string by replacing ^d or ^s codes with their corresponding descriptors from memory database.
+        Decode a given string by replacing ^d or ^s codes with their corresponding descriptors from Redis.
         """
-        descritor = ""
-
-        REGEX = re.compile(r"(\^[ds])(\d+)")
         buffer = []
-        matcher = REGEX.finditer(text)
+        matcher = self.REGEX.finditer(text)
+
+        # Collect all descriptor codes from the text
+        codes = {match.group(2).lstrip('0') for match in matcher}
+
+        # Fetch all descriptor terms in bulk from Redis
+        descriptors = self.bulk_fetch_descriptors(codes, lang)
+
+        # Reset matcher after collecting codes
+        matcher = self.REGEX.finditer(text)
 
         last_end = 0
         for match in matcher:
             subcampo = match.group(1)  # Either ^d or ^s
-            codigo = match.group(2)  # The numerical code following ^d or ^s
-            descritor = None
+            codigo = match.group(2).lstrip('0')  # The numerical code, stripped of leading zeros
+            descritor = descriptors.get(codigo)
 
-            try:
-                 # Fetch the descriptor term from memory database based on the code and language
-                descritor = self.get_descriptor_term(codigo, lang)
-            except Exception as ex:
-                logger.error(f"Error retrieving descriptor for code {codigo}: {ex}")
-
-             # If no descriptor is found, fall back to the original code
+            # If no descriptor is found, fall back to the original code
             if not descritor:
                 descritor = f"{subcampo}{codigo}"
             else:
@@ -46,36 +46,33 @@ class DecodDeCS:
 
         return "".join(buffer)
 
-    def get_descriptor_term(self, code, lang):
+    def bulk_fetch_descriptors(self, codes, lang):
         """
-        Fetch the descriptor term from memory database using the provided code and language.
+        Fetch descriptor terms in bulk from Redis using the provided list of codes and language.
         """
-        descriptor = None
+        pipeline = self.redis_client.pipeline()
+        for code in codes:
+            pipeline.hgetall(f"decs:{code}")
+        results = pipeline.execute()
 
-        code = code.lstrip('0')
-
-        logger.info(f"Fetching descriptor for code {code} in language {lang}")
-        descriptor_term = self.redis_client.hgetall(f"decs:{code}")
-
-        if descriptor_term:
-             # Get the descriptor based on the requested language
-            if lang == 'es':
-                descriptor = descriptor_term.get(b'es')
-            elif lang == 'pt':
-                descriptor = descriptor_term.get(b'pt-br')
-            elif lang == 'fr':
-                descriptor = descriptor_term.get(b'fr')
-            else:
-                descriptor = descriptor_term.get(b'en')
+        descriptors = {}
+        for code, result in zip(codes, results):
+            if result:
+                if lang == 'es':
+                    descriptors[code] = result.get(b'es')
+                elif lang == 'pt':
+                    descriptors[code] = result.get(b'pt-br')
+                elif lang == 'fr':
+                    descriptors[code] = result.get(b'fr')
+                else:
+                    descriptors[code] = result.get(b'en')
 
         # Decode the bytes to string if a descriptor is found
-        descriptor_str = descriptor.decode('utf-8') if descriptor else None
-
-        return descriptor_str
+        return {k: v.decode('utf-8') if v else None for k, v in descriptors.items()}
 
 
 # Example usage:
 if __name__ == "__main__":
     decod = DecodDeCS(redis_host='iahx_controller_cache', redis_port=6379, redis_db=0)
-    result = decod.decode("Olá ^d22016  tudo bem ^d1327 some text ^d12009^s22016", 'pt')
+    result = decod.decode("Loren ^d22016  loren lipson ^d1327 loren ^d12009^s22016", 'pt')
     print(result)
