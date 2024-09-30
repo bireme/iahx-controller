@@ -103,7 +103,7 @@ async def search(
     tag: Annotated[str, Form()] = None,
     fl: Annotated[str, Form()] = None,
     fb: Annotated[str, Form()] = None,
-    facet_field: List[str] = Form(default=None, alias='facet.field'),
+    facet_field: List[str] = Form(default_factory=list, alias='facet.field'),
     facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None,
     apikey: str = Header(...),
 ):
