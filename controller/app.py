@@ -71,8 +71,11 @@ async def send_post_command(query_map, url):
             return response.text
     except httpx.RequestError as e:
         logger.error(f"Error sending POST command: {e}")
-        return '"connection_problem"'
-
+        # Catch any request-related errors
+        raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="Invalid POST or connection error with Solr server"
+            )
 
 def format_query(query_string):
     replacement = "__replacement__"
