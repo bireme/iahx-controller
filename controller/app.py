@@ -82,6 +82,12 @@ async def send_post_command(query_map, url):
             detail="Error response from Solr server"
         )
 
+def fix_missing_double_quote(input_string):
+    if input_string.count('"') % 2 != 0 and input_string.endswith('"') is False:
+        return input_string + '"'
+    return input_string
+
+
 def format_query(query_string):
     replacement = "__replacement__"
     pattern = re.compile(r'["["].*?["["]')
@@ -93,6 +99,9 @@ def format_query(query_string):
 
     for match in pattern.finditer(query_string):
         query_formatted = query_formatted.replace(replacement, match.group(0), 1)
+
+    # Check if the string starts with a double quote and does not end with one
+    query_formatted = fix_missing_double_quote(query_formatted)
 
     return query_formatted
 
