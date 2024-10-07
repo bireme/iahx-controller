@@ -82,9 +82,14 @@ async def send_post_command(query_map, url):
             detail="Error response from Solr server"
         )
 
-def fix_missing_double_quote(input_string):
+def fix_double_quotes(input_string):
+    # Replace curly double quotes with standard double quotes
+    input_string = input_string.replace('“', '"').replace('”', '"')
+
+    # Check if the string starts with a double quote and does not end with one
     if input_string.count('"') % 2 != 0 and input_string.endswith('"') is False:
         return input_string + '"'
+
     return input_string
 
 
@@ -100,8 +105,8 @@ def format_query(query_string):
     for match in pattern.finditer(query_string):
         query_formatted = query_formatted.replace(replacement, match.group(0), 1)
 
-    # Check if the string starts with a double quote and does not end with one
-    query_formatted = fix_missing_double_quote(query_formatted)
+    # Fix common doble quotes errors at query string
+    query_formatted = fix_double_quotes(query_formatted)
 
     return query_formatted
 
@@ -141,7 +146,6 @@ async def search(
         query_map['q'] = f"{index}:({query_formatted})" if index else query_formatted
     else:
         query_map['q'] = "*:*"
-        query_map['facet.method'] = "enum"
 
     if fq:
         query_map['fq'] = format_query(fq)
