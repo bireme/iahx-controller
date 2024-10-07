@@ -40,7 +40,7 @@ def set_solr_server(site, col):
         solr += f"-{col}"
 
     # Normalize site to environment variable names. ex: solr/portal -> SOLR_PORTAL
-    site_env_name = site.replace("/", "_").upper()
+    site_env_name = site.replace("/", "_").replace("-","_").upper()
 
     server = os.getenv(site_env_name, DEFAULT_SERVER)
 
@@ -71,11 +71,16 @@ async def send_post_command(query_map, url):
             return response.text
     except httpx.RequestError as e:
         logger.error(f"Error sending POST command: {e}")
-        # Catch any request-related errors
         raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail="Invalid POST or connection error with Solr server"
-            )
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Invalid POST or connection error with Solr server"
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error occurred: {e}")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail="Error response from Solr server"
+        )
 
 def format_query(query_string):
     replacement = "__replacement__"
