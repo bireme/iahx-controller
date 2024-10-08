@@ -120,7 +120,7 @@ async def search(
     lang: Annotated[str, Form()] = None,
     start: Annotated[int, Form()] = None,
     sort: Annotated[str, Form()] = None,
-    count: Annotated[int, Form()] = None,
+    rows: Annotated[int, Form(alias='count')] = None,
     output: Annotated[str, Form()] = None,
     tag: Annotated[str, Form()] = None,
     fl: Annotated[str, Form()] = None,
@@ -151,7 +151,7 @@ async def search(
         query_map['fq'] = format_query(fq)
 
     # Add other parameters to query_map
-    for param in ['start', 'sort', 'count', 'tag', 'fl']:
+    for param in ['start', 'sort', 'rows', 'tag', 'fl']:
         value = locals()[param]
         if value:
             query_map[param] = value
