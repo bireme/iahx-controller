@@ -7,6 +7,10 @@ class DecodDeCS:
         self.redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db)
         self.REGEX = re.compile(r"(\^[ds])(\d+)")  # Pre-compile regex pattern
 
+    def close(self):
+        if self.redis_client:
+            self.redis_client.close()
+
     def decode(self, text, lang):
         """
         Decode a given string by replacing ^d or ^s codes with their corresponding descriptors from Redis.

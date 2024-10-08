@@ -31,14 +31,13 @@ API_TOKEN = os.getenv("API_TOKEN", "8983")
 ENCODE_REGEX = re.compile(r"\^[ds]\d+")
 SOLR_TIMEOUT = int(os.getenv("SOLR_TIMEOUT", 10))
 
-# Initialize DeCS decoder
-decs = DecodDeCS()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.client = httpx.AsyncClient()
+    app.state.decs = DecodDeCS()  # Initialize DeCS decoder
     yield
     await app.state.client.aclose()
+    await app.state.decs.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -193,7 +192,7 @@ async def search(
     # Run regular expression and decode if found thesaurus codes
     if ENCODE_REGEX.search(result):
         logger.info(f"Applying decod for language {lang}")
-        result = decs.decode(result, lang)
+        result = app.state.decs.decode(result, lang)
 
         # Remove subfields marks of non decoded descriptors
         result = re.sub(r"(\^d)", "", result)
@@ -228,6 +227,6 @@ async def healthcheck(
     }
 
     result = await send_post_command(query_map, search_url)
-    result = decs.decode(result, lang)
+    result = app.state.decs.decode(result, lang)
 
     return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
