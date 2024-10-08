@@ -29,6 +29,7 @@ DEFAULT_SERVER = os.getenv("DEFAULT_SOLR_SERVER", "localhost")
 DEFAULT_PORT = os.getenv("DEFAULT_SOLR_PORT", "8983")
 API_TOKEN = os.getenv("API_TOKEN", "8983")
 ENCODE_REGEX = re.compile(r"\^[ds]\d+")
+SOLR_TIMEOUT = int(os.getenv("SOLR_TIMEOUT", 10))
 
 # Initialize DeCS decoder
 decs = DecodDeCS()
@@ -73,7 +74,7 @@ async def send_post_command(query_map, url):
     logger.info(query_map)
 
     try:
-        response = await app.state.client.post(url, data=query_map)
+        response = await app.state.client.post(url, data=query_map, timeout=SOLR_TIMEOUT)
         response.raise_for_status()
         return response.text
     except httpx.RequestError as e:
