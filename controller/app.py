@@ -3,6 +3,7 @@ from fastapi import FastAPI, Header, HTTPException, Request, Form
 from fastapi.responses import JSONResponse, Response
 from typing import Annotated, List
 from decode_decs import DecodDeCS
+from contextlib import asynccontextmanager
 from loguru import logger
 
 import re
@@ -22,7 +23,6 @@ sentry_sdk.init(
     profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE",0)),
 )
 
-app = FastAPI()
 
 # Configuration parameters from .env file
 DEFAULT_SERVER = os.getenv("DEFAULT_SOLR_SERVER", "localhost")
@@ -33,6 +33,14 @@ ENCODE_REGEX = re.compile(r"\^[ds]\d+")
 # Initialize DeCS decoder
 decs = DecodDeCS()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.client = httpx.AsyncClient()
+    yield
+    await app.state.client.aclose()
+
+
+app = FastAPI(lifespan=lifespan)
 
 def set_solr_server(site, col):
     solr = f"/{site}"
@@ -65,10 +73,9 @@ async def send_post_command(query_map, url):
     logger.info(query_map)
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, data=query_map)
-            response.raise_for_status()
-            return response.text
+        response = await app.state.client.post(url, data=query_map)
+        response.raise_for_status()
+        return response.text
     except httpx.RequestError as e:
         logger.error(f"Error sending POST command: {e}")
         raise HTTPException(
