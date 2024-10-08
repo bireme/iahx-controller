@@ -204,3 +204,30 @@ async def search(
     else:
         result = '{"diaServerResponse":[' + result + ']}';
         return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
+
+
+@app.get('/healthcheck')
+async def healthcheck(
+    apikey: str = Header(...),
+):
+    if apikey != API_TOKEN:
+        raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail='Invalid api key',
+        )
+
+    lang = 'en'
+    solr_server = set_solr_server("solr5/portal", None)
+    search_url = f"{solr_server}/select/"
+    query_map = {
+        'q': "malaria",
+        'rows': 1,
+        'facet': "false",
+        'wt': "json",
+        'json.nl': "arrarr"
+    }
+
+    result = await send_post_command(query_map, search_url)
+    result = decs.decode(result, lang)
+
+    return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
