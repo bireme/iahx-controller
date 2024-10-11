@@ -132,6 +132,7 @@ async def search(
     tag: Annotated[str, Form()] = None,
     fl: Annotated[str, Form()] = None,
     fb: Annotated[str, Form()] = None,
+    facet: Annotated[str, Form()] = None,
     facet_field: List[str] = Form(default_factory=list, alias='facet.field'),
     facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None,
     apikey: str = Header(...),
@@ -158,7 +159,7 @@ async def search(
         query_map['fq'] = format_query(fq)
 
     # Add other parameters to query_map
-    for param in ['start', 'sort', 'rows', 'tag', 'fl']:
+    for param in ['start', 'sort', 'rows', 'tag', 'fl', 'facet']:
         value = locals()[param]
         if value:
             query_map[param] = value
