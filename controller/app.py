@@ -122,7 +122,7 @@ async def search(
     site: Annotated[str, Form()],
     col: Annotated[str, Form()] = None,
     q: Annotated[str, Form()] = None,
-    fq: Annotated[str, Form()] = None,
+    fq: List[str] = Form(default_factory=list),
     index: Annotated[str, Form()] = None,
     lang: Annotated[str, Form()] = None,
     start: Annotated[int, Form()] = None,
@@ -156,7 +156,7 @@ async def search(
         query_map['q'] = "*:*"
 
     if fq:
-        query_map['fq'] = format_query(fq)
+        query_map['fq'] = fq
 
     # Add other parameters to query_map
     for param in ['start', 'sort', 'rows', 'tag', 'fl', 'facet']:
