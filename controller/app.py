@@ -3,6 +3,7 @@ from fastapi import FastAPI, Header, HTTPException, Request, Form
 from fastapi.responses import JSONResponse, Response
 from typing import Annotated, List
 from decode_decs import DecodDeCS
+from schemas import SearchParams
 from contextlib import asynccontextmanager
 from loguru import logger
 
@@ -40,7 +41,11 @@ async def lifespan(app: FastAPI):
     await app.state.decs.close()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="IAHX CONTROLLER",
+    description="API for search in Solr servers and decode DeCS terms",
+    lifespan=lifespan
+    )
 
 def set_solr_server(site, col):
     solr = f"/{site}"
@@ -108,6 +113,7 @@ def format_query(query_string):
     query_formatted = query_formatted.lower()
     query_formatted = query_formatted.replace("$", "*")
     query_formatted = re.sub(r"\b(or|and not|and|to)\b", lambda m: m.group(1).upper(), query_formatted)
+    query_formatted = query_formatted.replace(" AND NOT ", " NOT ")
 
     for match in pattern.finditer(query_string):
         query_formatted = query_formatted.replace(replacement, match.group(0), 1)
@@ -117,8 +123,38 @@ def format_query(query_string):
 
     return query_formatted
 
-@app.post('/search')
-async def search(
+@app.post('/search_json')
+async def search_json(
+    param: SearchParams,
+    apikey: str = Header(...),
+):
+    """
+    Handle search using json parameters and query Solr server.
+    """
+
+    return await search_form(
+        site=param.site,
+        col=param.col,
+        q=param.q,
+        fq=param.fq,
+        index=param.index,
+        lang=param.lang,
+        start=param.start,
+        sort=param.sort,
+        rows=param.rows,
+        output=param.output,
+        tag=param.tag,
+        fl=param.fl,
+        fb=param.fb,
+        facet=param.facet,
+        facet_field=param.facet_field,
+        facet_field_terms=param.facet_field_terms,
+        apikey=apikey,
+        all_params=param.dict(),
+    )
+
+@app.post('/search_form')
+async def search_form(
     site: Annotated[str, Form()],
     col: Annotated[str, Form()] = None,
     q: Annotated[str, Form()] = None,
@@ -136,7 +172,11 @@ async def search(
     facet_field: List[str] = Form(default_factory=list, alias='facet.field'),
     facet_field_terms: Annotated[str, Form(alias='facet.field.terms')] = None,
     apikey: str = Header(...),
+    all_params: dict = None,
 ):
+    """
+    Handle search using form submission parameters (x-www-form-urlencoded) and query Solr server.
+    """
 
     if apikey != API_TOKEN:
         raise HTTPException(
@@ -156,11 +196,13 @@ async def search(
         query_map['q'] = "*:*"
 
     if fq:
-        query_map['fq'] = fq
+        query_map['fq'] = [format_query(fq_item) for fq_item in fq]
 
-    # Add other parameters to query_map
+    # Check for additional parameters in the request to add to query_map
+    all_params = all_params or locals()
+
     for param in ['start', 'sort', 'rows', 'tag', 'fl', 'facet']:
-        value = locals()[param]
+        value = all_params[param]
         if value:
             query_map[param] = value
 
@@ -187,6 +229,12 @@ async def search(
 
     if facet_field:
         query_map['facet.field'] = facet_field
+
+        # Check for additional facet parameters in the request to add to query_map (all starts with f. prefix)
+        for param in all_params:
+            if param.startswith('f.'):
+                query_map[param] = all_params[param]
+
 
     result = await send_post_command(query_map, search_url)
 
