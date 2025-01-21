@@ -112,7 +112,7 @@ def format_query(query_string):
 
     query_formatted = query_formatted.lower()
     query_formatted = query_formatted.replace("$", "*")
-    query_formatted = re.sub(r"\b(or|and not|and|to)\b", lambda m: m.group(1).upper(), query_formatted)
+    query_formatted = re.sub(r"\b(or|and not|and|to|now)\b", lambda m: m.group(1).upper(), query_formatted)
     query_formatted = query_formatted.replace(" AND NOT ", " NOT ")
 
     for match in pattern.finditer(query_string):
