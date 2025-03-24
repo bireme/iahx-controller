@@ -52,6 +52,7 @@ build:
 	@docker compose build
 
 build_no_cache:
+	@docker compose down
 	@docker compose build --no-cache
 
 run:
