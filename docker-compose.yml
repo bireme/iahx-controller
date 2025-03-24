@@ -28,7 +28,7 @@ services:
       - REDIS_AOF_ENABLED=no
       - TZ=${TIMEZONE}
     volumes:
-      - redis_data:/bitnami/redis/data
+      - ./redis_data:/bitnami/redis/data
     command: /opt/bitnami/scripts/redis/run.sh --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
     networks:
       - nginx-proxy
@@ -36,6 +36,3 @@ services:
 networks:
   nginx-proxy:
     external: true
-
-volumes:
-  redis_data:
