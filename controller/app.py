@@ -106,17 +106,21 @@ def fix_double_quotes(input_string):
 
 
 def format_query(query_string):
+    # Preserve strings between quotes and brackets e.g. [NOW TO *] or "example"
     replacement = "__replacement__"
-    pattern = re.compile(r'["["].*?["["]')
+    pattern = re.compile(r'["\[].*?["\]]')
+    matches = pattern.findall(query_string)
     query_formatted = pattern.sub(replacement, query_string)
 
+    # Lowercase first to fix problem with wildcards search (SOLR-218)
     query_formatted = query_formatted.lower()
     query_formatted = query_formatted.replace("$", "*")
     query_formatted = re.sub(r"\b(or|and not|and|to|now)\b", lambda m: m.group(1).upper(), query_formatted)
     query_formatted = query_formatted.replace(" AND NOT ", " NOT ")
 
-    for match in pattern.finditer(query_string):
-        query_formatted = query_formatted.replace(replacement, match.group(0), 1)
+    # Put back strings between quotation marks
+    for match in matches:
+        query_formatted = query_formatted.replace(replacement, match, 1)
 
     # Fix common doble quotes errors at query string
     query_formatted = fix_double_quotes(query_formatted)
