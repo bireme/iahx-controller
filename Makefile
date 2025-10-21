@@ -17,6 +17,7 @@ dev_build:
 	@docker compose -f $(COMPOSE_FILE_DEV) build
 
 dev_build_no_cache:
+	@docker compose -f $(COMPOSE_FILE_DEV) down -v
 	@docker compose -f $(COMPOSE_FILE_DEV) build --no-cache
 
 dev_run:
@@ -52,7 +53,7 @@ build:
 	@docker compose build
 
 build_no_cache:
-	@docker compose down
+	@docker compose down -v
 	@docker compose build --no-cache
 
 run:
