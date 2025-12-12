@@ -1,4 +1,3 @@
-from dremio_simple_query.connect import get_token, DremioConnection
 from loguru import logger
 from dotenv import load_dotenv
 from os import getenv
@@ -6,27 +5,19 @@ from os import getenv
 import redis
 import json
 import pandas as pd
+import mysql.connector
 
 def db_connect():
-    """Returns a connection with Dremio Datalake"""
+    """Returns a connection with MySQL database"""
 
-    # Login url endpoint
-    login_endpoint = f"http://{getenv('DREMIO_HOSTNAME')}:{getenv('DREMIO_PORT')}/apiv2/login"
-
-    # Payload for Login
-    payload = {
-        "userName": getenv("DREMIO_AUTH_USERNAME"),
-        "password": getenv("DREMIO_AUTH_PASSWORD")
-    }
-
-    # Get token from API
-    token = get_token(uri = login_endpoint, payload=payload)
-
-    # URL Dremio Software Flight Endpoint
-    arrow_endpoint=f"grpc://{getenv('DREMIO_HOSTNAME')}:32010"
-
-    # Establish Client
-    connection = DremioConnection(token, arrow_endpoint)
+    # Establish MySQL connection
+    connection = mysql.connector.connect(
+        host=getenv('DECS_DATABASE_HOST'),
+        port=getenv('DECS_DATABASE_PORT', '3306'),
+        user=getenv('DECS_DATABASE_USER'),
+        password=getenv('DECS_DATABASE_PASSWORD'),
+        database=getenv('DECS_DATABASE_NAME')
+    )
 
     return connection
 
@@ -34,18 +25,18 @@ def db_connect():
 def load_decs_in_redis(db_client, redis_client):
     """
     Load descriptors and qualifiers from Thesaurus database into Redis cache database.
-    Thesaurus tables are used: thesaurus_descriptor_decs_active and thesaurus_qualifier_decs_active
+    Thesaurus tables are used: thesaurus_descriptor and thesaurus_qualifier
     """
 
-    decs_tables = ['thesaurus_descriptor_decs_active', 'thesaurus_qualifier_decs_active']
+    decs_tables = ['thesaurus_descriptor', 'thesaurus_qualifier']
 
     for decs_table in decs_tables:
         logger.info(f"Loading table {decs_table}")
 
         # SQL query to execute
-        sql_query = f"SELECT decs_code, label FROM DECS.intermediate.{decs_table}"
+        sql_query = f"SELECT decs_code, label FROM {decs_table} AS t WHERE t.thesaurus = 1 and t.active = TRUE"
 
-        df = db_client.toPandas(sql_query)
+        df = pd.read_sql(sql_query, db_client)
 
         # For each row in the DataFrame, store it in Redis
         for _, row in df.iterrows():
@@ -79,11 +70,11 @@ if __name__ == "__main__":
     load_dotenv()
 
     db_client = redis_client = None
-    # Connnect to DeCS database
+    # Connect to MySQL database
     try:
         db_client = db_connect()
     except Exception as e:
-        logger.error(f"Error connecting to Dabase: {e}")
+        logger.error(f"Error connecting to MySQL: {e}")
 
     # Connect to Cache Database (Redis)
     try:

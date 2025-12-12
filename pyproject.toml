@@ -15,7 +15,8 @@ loguru = "^0.7.2"
 sentry-sdk = {extras = ["fastapi"], version = "^2.14.0"}
 
 [tool.poetry.group.dev.dependencies]
-dremio-simple-query = "^0.0.4"
+mysql-connector-python = "^9.5.0"
+pandas = "^2.3.3"
 
 [build-system]
 requires = ["poetry-core"]
