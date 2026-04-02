@@ -17,6 +17,11 @@ sentry-sdk = {extras = ["fastapi"], version = "^2.14.0"}
 [tool.poetry.group.dev.dependencies]
 mysql-connector-python = "^9.5.0"
 pandas = "^2.3.3"
+pytest = "^9.0"
+httpx = "^0.28"
+
+[tool.pytest.ini_options]
+testpaths = ["controller/tests"]
 
 [build-system]
 requires = ["poetry-core"]

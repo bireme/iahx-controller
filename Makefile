@@ -47,6 +47,9 @@ dev_cache_sh:
 dev_import_decs_redis:
 	python controller/util/import_decs_db.py
 
+dev_test:
+	@docker compose -f $(COMPOSE_FILE_DEV) exec iahx_controller python -m pytest tests/ -v
+
 
 ## PROD shortcuts
 build:

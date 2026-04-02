@@ -15,18 +15,18 @@ services:
       - nginx-proxy
 
   iahx_controller_cache:
-    image: bitnami/redis:7.2
+    image: redis:7.2-alpine
     container_name: iahx-controller-cache
     restart: unless-stopped
     ports:
       - 6379:6379
     volumes:
-      - ./redis_data:/bitnami/redis/data
+      - ./redis_data:/data
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
       - REDIS_AOF_ENABLED=no
       - TZ=${TIMEZONE}
-    command:  /opt/bitnami/scripts/redis/run.sh --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
+    command:  redis-server --maxmemory ${APP_CACHE_MEMORY} --maxmemory-policy allkeys-lru
     networks:
       - nginx-proxy
 

@@ -19,6 +19,8 @@ EXPOSE 8000
 ########### DEV STAGE ###########
 FROM base AS dev
 
+RUN poetry install --with dev --no-interaction --no-ansi
+
 CMD fastapi dev app.py --host 0.0.0.0
 
 ########### PRODUCTION STAGE ###########
