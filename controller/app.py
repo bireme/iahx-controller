@@ -17,7 +17,7 @@ import os
 
 # Configure log and monitoring service
 logger.remove()
-logger.add(sys.stderr, level=os.getenv("LOG_LEVEL"), serialize=False)
+logger.add(sys.stderr, level=os.getenv("LOG_LEVEL", "INFO"), serialize=False)
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE",0)),
@@ -45,6 +45,14 @@ app = FastAPI(
     title="IAHX CONTROLLER",
     description="API for search in Solr servers and decode DeCS terms",
     lifespan=lifespan
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"},
     )
 
 def set_solr_server(site, col):
@@ -245,7 +253,10 @@ async def search_form(
     # Run regular expression and decode if found thesaurus codes
     if ENCODE_REGEX.search(result):
         logger.info(f"Applying decod for language {lang}")
-        result = app.state.decs.decode(result, lang)
+        try:
+            result = app.state.decs.decode(result, lang)
+        except Exception as e:
+            logger.error(f"Error decoding DeCS terms: {e}")
 
         # Remove subfields marks of non decoded descriptors
         result = re.sub(r"(\^d)", "", result)
@@ -254,8 +265,15 @@ async def search_form(
     if output in ['xml', 'solr']:
         return Response(content=result, media_type="text/xml; charset=utf-8", headers={"Cache-Control": "no-cache"})
     else:
-        result = '{"diaServerResponse":[' + result + ']}';
-        return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
+        try:
+            result = '{"diaServerResponse":[' + result + ']}';
+            return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing Solr JSON response: {e}")
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail="Error parsing search response",
+            )
 
 
 @app.get('/healthcheck')
@@ -280,6 +298,21 @@ async def healthcheck(
     }
 
     result = await send_post_command(query_map, search_url)
-    result = app.state.decs.decode(result, lang)
 
-    return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
+    try:
+        result = app.state.decs.decode(result, lang)
+    except Exception as e:
+        logger.error(f"Healthcheck DeCS decode error: {e}")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="DeCS decode failed",
+        )
+
+    try:
+        return JSONResponse(content=json.loads(result), headers={"Cache-Control": "no-cache"})
+    except json.JSONDecodeError as e:
+        logger.error(f"Healthcheck JSON parse error: {e}")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Error parsing healthcheck response",
+        )

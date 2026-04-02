@@ -54,10 +54,14 @@ class DecodDeCS:
         """
         Fetch descriptor terms in bulk from Redis using the provided list of codes and language.
         """
-        pipeline = self.redis_client.pipeline()
-        for code in codes:
-            pipeline.hgetall(f"decs:{code}")
-        results = pipeline.execute()
+        try:
+            pipeline = self.redis_client.pipeline()
+            for code in codes:
+                pipeline.hgetall(f"decs:{code}")
+            results = pipeline.execute()
+        except (redis.ConnectionError, redis.TimeoutError, redis.RedisError) as e:
+            logger.error(f"Redis error fetching DeCS descriptors: {e}")
+            return {}
 
         descriptors = {}
         for code, result in zip(codes, results):
@@ -72,7 +76,11 @@ class DecodDeCS:
                     descriptors[code] = result.get(b'en')
 
         # Decode the bytes to string if a descriptor is found
-        return {k: v.decode('utf-8') if v else None for k, v in descriptors.items()}
+        try:
+            return {k: v.decode('utf-8') if v else None for k, v in descriptors.items()}
+        except UnicodeDecodeError as e:
+            logger.error(f"Error decoding DeCS descriptor bytes: {e}")
+            return {}
 
 
 # Example usage:
