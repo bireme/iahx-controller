@@ -13,7 +13,6 @@ services:
       - redis_data:/redis_data
     ports:
       - ${APP_PORT}:8000
-    command: uvicorn app:app --host 0.0.0.0 --port 8000 ${APP_RUN_PARAMS}
     networks:
       - nginx-proxy
 
