@@ -5,6 +5,7 @@ COMPOSE_FILE_DEV = docker-compose-dev.yml
 IMAGE_NAME=bireme/iahx-controller
 export APP_VER?=$(shell git describe --tags --long --always | sed 's/-g[a-z0-9]\{7\}//' | sed 's/-/\./')
 TAG_LATEST=$(IMAGE_NAME):latest
+PACKAGE ?=
 
 ## variable used in docker-compose for tag the build image
 export IMAGE_TAG=$(IMAGE_NAME):$(APP_VER)
@@ -50,6 +51,8 @@ dev_import_decs_redis:
 dev_test:
 	@docker compose -f $(COMPOSE_FILE_DEV) exec iahx_controller uv run pytest tests/ -v
 
+dev_update:
+	uv lock $(if $(PACKAGE),--upgrade-package $(PACKAGE),--upgrade)
 
 ## PROD shortcuts
 build:
