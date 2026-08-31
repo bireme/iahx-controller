@@ -1,28 +1,25 @@
-[tool.poetry]
+[project]
 name = "controller"
 version = "0.1.0"
 description = ""
-authors = ["BIREME"]
+authors = [{ name = "BIREME" }]
 readme = "README.md"
-package-mode = false
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.115.0,<0.116.0",
+    "redis>=5.0.8,<6.0.0",
+    "requests>=2.32.3,<3.0.0",
+    "loguru>=0.7.2,<0.8.0",
+    "sentry-sdk[fastapi]>=2.14.0,<3.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-fastapi = {extras = ["standard"], version = "^0.115.0"}
-redis = "^5.0.8"
-requests = "^2.32.3"
-loguru = "^0.7.2"
-sentry-sdk = {extras = ["fastapi"], version = "^2.14.0"}
-
-[tool.poetry.group.dev.dependencies]
-mysql-connector-python = "^9.5.0"
-pandas = "^2.3.3"
-pytest = "^9.0"
-httpx = "^0.28"
+[dependency-groups]
+dev = [
+    "mysql-connector-python>=9.5.0,<10.0.0",
+    "pandas>=2.3.3,<3.0.0",
+    "pytest>=9.0,<10.0",
+    "httpx>=0.28,<0.29",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["controller/tests"]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

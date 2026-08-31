@@ -1,3 +1,5 @@
 .env
 README-dev.md
 CLAUDE.md
+.venv/
+__pycache__/
