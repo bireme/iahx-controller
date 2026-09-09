@@ -107,3 +107,51 @@ def test_bulk_fetch_unicode_decode_error(decs):
 
     result = decs.bulk_fetch_descriptors({"22016"}, "en")
     assert result == {}
+
+
+# --- XML entity escaping ---
+
+def test_decode_escapes_xml_entities_when_requested(decs):
+    _setup_pipeline(decs, [
+        {b'en': b'anatomy & histology'},
+    ])
+
+    result = decs.decode('<str name="mh">^d22016</str>', "en", escape_xml=True)
+    assert result == '<str name="mh">anatomy &amp; histology</str>'
+
+
+def test_decode_does_not_escape_by_default(decs):
+    _setup_pipeline(decs, [
+        {b'en': b'anatomy & histology'},
+    ])
+
+    result = decs.decode("term: ^d22016", "en")
+    assert result == "term: anatomy & histology"
+
+
+def test_decode_escaping_leaves_surrounding_markup_untouched(decs):
+    """Only the substituted term is escaped, never the response markup around it."""
+    _setup_pipeline(decs, [
+        {b'en': b'Malaria'},
+    ])
+
+    text = '<doc><str name="a">R&amp;D</str><str name="mh">^d22016</str></doc>'
+    result = decs.decode(text, "en", escape_xml=True)
+    assert "R&amp;D" in result
+    assert "&amp;amp;" not in result
+
+
+def test_decode_escapes_qualifier_term_before_slash_prefix(decs):
+    _setup_pipeline(decs, [
+        {b'en': b'anatomy & histology'},
+    ])
+
+    result = decs.decode("^s22016", "en", escape_xml=True)
+    assert result == "/anatomy &amp; histology"
+
+
+def test_decode_escaping_leaves_missing_descriptor_fallback_intact(decs):
+    _setup_pipeline(decs, [{}])
+
+    result = decs.decode("^d22016", "en", escape_xml=True)
+    assert result == "^d22016"

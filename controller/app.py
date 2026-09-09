@@ -219,8 +219,7 @@ async def search_form(
             query_map[param] = value
 
     if output == "xml":
-        query_map['wt'] = "xslt"
-        query_map['tr'] = "export-xml.xsl"
+        query_map['wt'] = "xml"
     elif output != "solr":
         query_map['wt'] = "json"
         query_map['json.nl'] = "arrarr"
@@ -254,7 +253,7 @@ async def search_form(
     if ENCODE_REGEX.search(result):
         logger.info(f"Applying decod for language {lang}")
         try:
-            result = app.state.decs.decode(result, lang)
+            result = app.state.decs.decode(result, lang, escape_xml=output in ['xml', 'solr'])
         except Exception as e:
             logger.error(f"Error decoding DeCS terms: {e}")
 
