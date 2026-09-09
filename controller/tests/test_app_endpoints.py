@@ -1,3 +1,5 @@
+import xml.etree.ElementTree as ET
+
 import httpx
 import pytest
 
@@ -110,8 +112,8 @@ def test_search_json_xml_output(client, auth_headers, solr_response, posted_quer
     assert response.status_code == 200
     assert "text/xml" in response.headers["content-type"]
     _, query_map = posted_query()
-    assert query_map["wt"] == "xslt"
-    assert query_map["tr"] == "export-xml.xsl"
+    assert query_map["wt"] == "xml"
+    assert "tr" not in query_map
 
 
 # --- Solr transport errors ---
@@ -304,6 +306,39 @@ def test_decode_failure_strips_subfield_marks(client, auth_headers, solr_respons
     assert response.status_code == 200
     doc = response.json()["diaServerResponse"][0]["response"]["docs"][0]
     assert doc["t"] == "malaria22016/01234"
+
+
+def test_xml_output_escapes_decoded_terms(client, auth_headers, solr_response, decs_decode):
+    """A term with '&' must not break the XML response it is spliced into."""
+    solr_response(text='<response><doc><str name="mh">^d22016</str></doc></response>')
+    decs_decode.side_effect = lambda text, lang, escape_xml=False: text.replace(
+        "^d22016", "anatomy &amp; histology" if escape_xml else "anatomy & histology"
+    )
+
+    response = client.post(
+        "/search_form",
+        data={"site": "solr/portal", "q": "malaria", "lang": "en", "output": "xml"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert decs_decode.call_args.kwargs["escape_xml"] is True
+    assert "anatomy &amp; histology" in response.text
+    ET.fromstring(response.text)  # raises if not well-formed
+
+
+def test_json_output_does_not_escape_decoded_terms(client, auth_headers, solr_response, decs_decode):
+    solr_response(text='{"response":{"docs":[{"mh":"^d22016"}]}}')
+    decs_decode.side_effect = lambda text, lang, escape_xml=False: text.replace(
+        "^d22016", "anatomy & histology"
+    )
+
+    response = client.post(
+        "/search_form",
+        data={"site": "solr/portal", "q": "malaria", "lang": "en"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert decs_decode.call_args.kwargs["escape_xml"] is False
 
 
 # --- /healthcheck ---

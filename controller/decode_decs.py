@@ -1,4 +1,5 @@
 from loguru import logger
+from xml.sax.saxutils import escape as xml_escape
 import re
 import redis
 
@@ -11,9 +12,13 @@ class DecodDeCS:
         if self.redis_client:
             self.redis_client.close()
 
-    def decode(self, text, lang):
+    def decode(self, text, lang, escape_xml=False):
         """
         Decode a given string by replacing ^d or ^s codes with their corresponding descriptors from Redis.
+
+        When escape_xml is True, only the descriptor term is escaped (&, < and >), so terms
+        spliced into an XML response keep it well-formed. The surrounding response text is
+        left untouched to avoid double-escaping the markup itself.
         """
         buffer = []
         matcher = self.REGEX.finditer(text)
@@ -37,6 +42,9 @@ class DecodDeCS:
             if not descritor:
                 descritor = f"{subcampo}{codigo}"
             else:
+                if escape_xml:
+                    descritor = xml_escape(descritor)
+
                 # Add / before the term for qualifiers
                 if subcampo == "^s":
                     descritor = f"/{descritor}"
