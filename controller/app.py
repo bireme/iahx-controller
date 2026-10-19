@@ -137,6 +137,7 @@ def format_query(query_string):
 
 @app.post('/search_json')
 async def search_json(
+    request: Request,
     param: SearchParams,
     apikey: str = Header(...),
 ):
@@ -145,6 +146,7 @@ async def search_json(
     """
 
     return await search_form(
+        request=request,
         site=param.site,
         col=param.col,
         q=param.q,
@@ -167,6 +169,7 @@ async def search_json(
 
 @app.post('/search_form')
 async def search_form(
+    request: Request,
     site: Annotated[str, Form()],
     col: Annotated[str, Form()] = None,
     q: Annotated[str, Form()] = None,
@@ -211,7 +214,10 @@ async def search_form(
         query_map['fq'] = [format_query(fq_item) for fq_item in fq]
 
     # Check for additional parameters in the request to add to query_map
-    all_params = all_params or locals()
+    # Undeclared form fields (ex. f.<field>.facet.sort) are not in locals(), so merge the raw form data
+    if all_params is None:
+        form_data = await request.form()
+        all_params = {**form_data, **locals()}
 
     for param in ['start', 'sort', 'rows', 'tag', 'fl', 'facet']:
         value = all_params[param]

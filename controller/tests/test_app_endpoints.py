@@ -220,6 +220,33 @@ def test_search_form_fb_sets_facet_limit(client, auth_headers, solr_response, po
     assert query_map["f.type.facet.limit"] == "10"
 
 
+def test_search_form_forwards_per_field_facet_params(client, auth_headers, solr_response, posted_query):
+    solr_response()
+
+    response = client.post(
+        "/search_form",
+        data={"site": "solr/portal", "facet.field": "who_regions", "f.who_regions.facet.sort": "asc"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    _, query_map = posted_query()
+    assert query_map["facet.field"] == ["who_regions"]
+    assert query_map["f.who_regions.facet.sort"] == "asc"
+
+
+def test_search_json_forwards_per_field_facet_params(client, auth_headers, solr_response, posted_query):
+    solr_response()
+
+    response = client.post(
+        "/search_json",
+        json={"site": "solr/portal", "facet.field": ["who_regions"], "f.who_regions.facet.sort": "asc"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    _, query_map = posted_query()
+    assert query_map["f.who_regions.facet.sort"] == "asc"
+
+
 def test_search_form_facet_field_terms_tags_exclusion(client, auth_headers, solr_response, posted_query):
     solr_response()
 
