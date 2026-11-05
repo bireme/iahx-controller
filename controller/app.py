@@ -292,7 +292,7 @@ async def healthcheck(
         )
 
     lang = 'en'
-    solr_server = set_solr_server("solr5/portal", None)
+    solr_server = set_solr_server("solr/portal", None)
     search_url = f"{solr_server}/select/"
     query_map = {
         'q': "malaria",
